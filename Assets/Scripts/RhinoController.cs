@@ -29,18 +29,49 @@ public class RhinoController : MonoBehaviour {
 
     private AudioSource audioSource;
     private Animator animator;
-
+    private bool isImpacting;
     private void Awake () {
         navMeshAgent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
         audioSource = GetComponent<AudioSource>();
-	}
+        aimSlider.gameObject.SetActive(false);
+    }
     private void OnEnable() {
-        StartCoroutine("ProcessImpact");
+        
+        GameObject go = GameObject.FindGameObjectWithTag(crystalTag);
+        if (go!= null) {
+            target = go.transform;
+            StartCoroutine("ProcessState");
 
+        }
+
+    }
+    //讓犀牛以水晶為圓心的半徑內隨機移動(Coroutine)
+    private IEnumerator ProcessState() {
+        while (target != null) {
+            //隨機產生犀牛的目的地，讓其前往
+            navMeshAgent.speed = walkingSpeed;
+            float randomRad = Random.Range(0f, 360f) * Mathf.Deg2Rad;
+            float distance = Vector3.Distance(impactTarget.position, transform.position);
+            Vector3 randomPos = target.position + new Vector3(Mathf.Cos(randomRad), 0, Mathf.Sin(randomRad)) * distance;
+            navMeshAgent.SetDestination(randomPos);
+            yield return null;
+            //等待犀牛走到目的地
+            while (navMeshAgent.remainingDistance > navMeshAgent.stoppingDistance) {
+                yield return null;
+            }
+            //判斷水晶是否還存在，若不存在使用 yield break 離開 Coroutine
+            if (target == null)
+                yield break;
+            //開始攻擊 呼叫 private IEnumerator ProcessImpact()
+            yield return StartCoroutine("ProcessImpact");
+            //攻擊結束後等待2秒
+            yield return new WaitForSeconds(2f);
+        }
 
     }
     private IEnumerator ProcessImpact() {
+        transform.LookAt(target);
         aimSlider.gameObject.SetActive(true);
         aimSlider.value = aimSlider.minValue;
         aimSlider.maxValue = impactChargeTime;
@@ -50,6 +81,7 @@ public class RhinoController : MonoBehaviour {
             yield return null;
 
         }
+        aimSlider.gameObject.SetActive(false);
         navMeshAgent.speed = impactSpeed;
         RaycastHit hit;
         float distance = Vector3.Distance(impactTarget.position, transform.position);
@@ -62,6 +94,13 @@ public class RhinoController : MonoBehaviour {
 
         }
         navMeshAgent.SetDestination(targetPos-transform.forward * hitOff);
+        yield return null;
+        //等待犀牛衝到目的地
+        isImpacting = true;
+        while (navMeshAgent.remainingDistance > navMeshAgent.stoppingDistance){
+            yield return null;
+        }
+        isImpacting = false;
     }
 
 	// Update is called once per frame
