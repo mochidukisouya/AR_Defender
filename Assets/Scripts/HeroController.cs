@@ -81,9 +81,10 @@ public class HeroController : MonoBehaviour
     public void OnGunTrigger() {
         if (target != null) {
             target.Hurt(gunDamage);
+            audioSource.PlayOneShot(fireSound);
+            gunshotEffect.Play(); 
         }
-        audioSource.PlayOneShot(fireSound);
-        gunshotEffect.Play(); 
+
     }
     public void OnDead() {
         navMeshAgent.enabled = false;
