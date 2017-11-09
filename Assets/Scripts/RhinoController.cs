@@ -30,11 +30,15 @@ public class RhinoController : MonoBehaviour {
     private AudioSource audioSource;
     private Animator animator;
     private bool isImpacting;
+    private Collider SwitchCollider;
+
+
     private void Awake () {
         navMeshAgent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
         audioSource = GetComponent<AudioSource>();
         aimSlider.gameObject.SetActive(false);
+        SwitchCollider = GetComponent<Collider>();
     }
     private void OnEnable() {
         
@@ -103,12 +107,35 @@ public class RhinoController : MonoBehaviour {
         isImpacting = false;
     }
 
-	// Update is called once per frame
-	private void Update () {
-        //navMeshAgent.SetDestination(target.position);
-	}
+
     public void TriggerRoarSound() {
         audioSource.PlayOneShot(roarSound);
 
     }
+    private void OnTriggerEnter(Collider other) {
+        if (isImpacting) {
+            PlayHitEffect();
+            AttackableBehavior attackable = other.GetComponent<AttackableBehavior>();
+            if (attackable) {
+                attackable.Hurt(impactDamge);
+            }
+        }
+    }
+    private void PlayHitEffect() {
+        audioSource.PlayOneShot(impactSound);
+        explosionEffect.Play();
+    }
+    public void OnDead() {
+        StopAllCoroutines();
+        aimSlider.gameObject.SetActive(false);
+        navMeshAgent.enabled = false;
+        audioSource.PlayOneShot(deadSound);
+        animator.SetTrigger(deadTrigger);
+        SwitchCollider.enabled = false;
+        
+
+
+    }
+
+
 }
