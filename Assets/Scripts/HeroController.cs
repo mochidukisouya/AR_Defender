@@ -5,26 +5,32 @@ using UnityEngine.AI;
 using UnityEngine.UI;
 public class HeroController : MonoBehaviour
 {
-    public NavMeshAgent navMeshAgent;
+    private NavMeshAgent navMeshAgent;
     public float attackRadius;
     public RectTransform attackRangerRect;
     public LayerMask enemyLayerMask;
     public Color detectColor;
     public Color normalColor;
     public Image attackProbeCircle;
-    public GameObject target;
+    public AttackableBehavior target;
     public float turnsmooth = 15f;
+    public int gunDamage = 10;
 
-    public Animator animator;
+    private Animator animator;
     public string attackBool = "attack";
-    public AudioSource audioSource;
+    private AudioSource audioSource;
     public AudioClip fireSound;
+    public AudioClip deadSound;
     public ParticleSystem gunshotEffect;
-
+    private Collider SwitchCollider;
     // Use this for initialization
 
     private void Awake() {
         attackRadius = attackRangerRect.rect.width / 2;
+        navMeshAgent = GetComponent<NavMeshAgent>();
+        animator = GetComponent<Animator>();
+        audioSource = GetComponent<AudioSource>();
+        SwitchCollider = GetComponent<Collider>();
     }
     void Start()
     {
@@ -53,16 +59,18 @@ public class HeroController : MonoBehaviour
 
     public void Move(Vector3 target)
     {
+        if (navMeshAgent.enabled == false) {
+            return;
+        }
         navMeshAgent.SetDestination(target);
         navMeshAgent.isStopped = false;
     }
     public void FixedUpdate() {
 
         Collider[] allCollider= Physics.OverlapSphere(transform.position,attackRadius, enemyLayerMask);
-        if (allCollider.Length > 0)
-        {
+        if (allCollider.Length > 0){
             attackProbeCircle.color = detectColor;
-            target = allCollider[0].gameObject;
+            target = allCollider[0].GetComponent<AttackableBehavior>();
         }
         else {
             attackProbeCircle.color = normalColor;
@@ -71,7 +79,21 @@ public class HeroController : MonoBehaviour
         }
     }
     public void OnGunTrigger() {
+        if (target != null) {
+            target.Hurt(gunDamage);
+        }
         audioSource.PlayOneShot(fireSound);
         gunshotEffect.Play(); 
     }
+    public void OnDead() {
+        navMeshAgent.enabled = false;
+        animator.enabled = false;
+        attackProbeCircle.enabled = false;
+        SwitchCollider.enabled = false;
+        enabled = false;
+        audioSource.PlayOneShot(deadSound);
+
+
+    }
+
 }
