@@ -7,94 +7,91 @@ public class HeroController : MonoBehaviour
 {
     private NavMeshAgent navMeshAgent;
     public float attackRadius;
-    public RectTransform attackRangerRect;
+    public RectTransform attackRangeRect;
     public LayerMask enemyLayerMask;
     public Color detectColor;
     public Color normalColor;
     public Image attackProbeCircle;
     public AttackableBehavior target;
-    public float turnsmooth = 15f;
+    public float turnSmooth = 15f;
     public int gunDamage = 10;
-
     private Animator animator;
     public string attackBool = "attack";
     private AudioSource audioSource;
     public AudioClip fireSound;
+    public ParticleSystem gunShotEffect;
+    private Collider mCollider;
+    private RagdollBehavior ragdollBehavior;
     public AudioClip deadSound;
-    public ParticleSystem gunshotEffect;
-    private Collider SwitchCollider;
-    // Use this for initialization
-
-    private void Awake() {
-        attackRadius = attackRangerRect.rect.width / 2;
+    private void Awake()
+    {
+        attackRadius = attackRangeRect.rect.width / 2;
         navMeshAgent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
         audioSource = GetComponent<AudioSource>();
-        SwitchCollider = GetComponent<Collider>();
+        mCollider = GetComponent<Collider>();
+        ragdollBehavior = GetComponent<RagdollBehavior>();
     }
-    void Start()
-    {
-
-    }
-
+  
     // Update is called once per frame
     void Update()
     {
-        if (target==null) 
+        if (target == null)
             return;
-        if (navMeshAgent.remainingDistance == 0)//離目標的剩餘距離==0
+        if(navMeshAgent.remainingDistance == 0)
         {
             Vector3 lookPos = target.transform.position - transform.position;
             lookPos.y = 0;
             Quaternion lookRotation = Quaternion.LookRotation(lookPos);
-            transform.rotation = Quaternion.Lerp(transform.rotation, lookRotation, turnsmooth * Time.deltaTime);
-            animator.SetBool(attackBool,true);
+            transform.rotation = Quaternion.Lerp(transform.rotation, lookRotation, turnSmooth * Time.deltaTime);
+            animator.SetBool(attackBool, true);
         }
-        else {
+        else
+        {
             animator.SetBool(attackBool, false);
         }
-
-        
     }
 
     public void Move(Vector3 target)
     {
-        if (navMeshAgent.enabled == false) {
+        if (navMeshAgent.enabled == false)
             return;
-        }
         navMeshAgent.SetDestination(target);
         navMeshAgent.isStopped = false;
     }
-    public void FixedUpdate() {
 
-        Collider[] allCollider= Physics.OverlapSphere(transform.position,attackRadius, enemyLayerMask);
-        if (allCollider.Length > 0){
+    public void FixedUpdate()
+    {
+        Collider[] allCollider = Physics.OverlapSphere(transform.position, attackRadius, enemyLayerMask);
+        if (allCollider.Length > 0)
+        {
             attackProbeCircle.color = detectColor;
             target = allCollider[0].GetComponent<AttackableBehavior>();
         }
-        else {
+        else
+        {
             attackProbeCircle.color = normalColor;
             target = null;
             animator.SetBool(attackBool, false);
         }
     }
-    public void OnGunTrigger() {
-        if (target != null) {
-            target.Hurt(gunDamage);
-            audioSource.PlayOneShot(fireSound);
-            gunshotEffect.Play(); 
-        }
 
+    public void OnGunTrigger()
+    {
+        if (target)
+            target.Hurt(gunDamage);
+        audioSource.PlayOneShot(fireSound);
+        gunShotEffect.Play();
     }
-    public void OnDead() {
+
+    public void OnDead()
+    {
         navMeshAgent.enabled = false;
         animator.enabled = false;
         attackProbeCircle.enabled = false;
-        SwitchCollider.enabled = false;
+        mCollider.enabled = false;
         enabled = false;
         audioSource.PlayOneShot(deadSound);
-
-
+        ragdollBehavior.ToggleRagdoll(true);
     }
-
 }
